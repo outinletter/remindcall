@@ -32,7 +32,11 @@ struct ContactListView: View {
     let onSelect: (ContactInfo) -> Void
 
     @State private var query = ""
+    @State private var showSettings = false
     @AppStorage("contactSort") private var sort: ContactSort = .name
+    @AppStorage("listFieldOrder") private var orderRaw = InfoField.listOrder
+    @AppStorage("listFieldEnabled") private var enabledRaw = InfoField.listEnabled
+    @AppStorage("listShowStar") private var showStar = true
     @Environment(\.openURL) private var openURL
 
     @Query private var calls: [CallLog]
@@ -44,6 +48,15 @@ struct ContactListView: View {
         var result: [String: Date] = [:]
         for call in calls { result[call.phoneKey] = max(result[call.phoneKey] ?? .distantPast, call.calledAt) }
         for note in notes { result[note.phoneKey] = max(result[note.phoneKey] ?? .distantPast, note.createdAt) }
+        return result
+    }
+
+    /// 번호 키 → 가장 최근 메모
+    private var latestMemoByKey: [String: ContactNote] {
+        var result: [String: ContactNote] = [:]
+        for note in notes where note.createdAt > (result[note.phoneKey]?.createdAt ?? .distantPast) {
+            result[note.phoneKey] = note
+        }
         return result
     }
 
@@ -76,20 +89,6 @@ struct ContactListView: View {
         }
     }
 
-    /// 정렬 기준에 맞는 오른쪽 보조 문구
-    private func detail(for contact: ContactInfo, last: [String: Date]) -> String? {
-        switch sort {
-        case .recent, .stale:
-            return contact.allKeys.compactMap { last[$0] }.max()
-                .map { $0.formatted(.relative(presentation: .named)) }
-        case .birthday:
-            guard let next = contact.birthday?.nextBirthday() else { return nil }
-            return next.days == 0 ? "오늘" : "D-\(next.days)"
-        default:
-            return nil
-        }
-    }
-
     var body: some View {
         NavigationStack {
             Group {
@@ -104,7 +103,10 @@ struct ContactListView: View {
             .navigationTitle("연락처")
             .searchable(text: $query, prompt: "이름, 번호 뒷자리, 초성")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button { showSettings = true } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
                     Menu {
                         Picker("정렬", selection: $sort) {
                             ForEach(ContactSort.allCases) { option in
@@ -116,27 +118,47 @@ struct ContactListView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showSettings) {
+                FieldSettingsView(
+                    title: "연락처 표시 설정",
+                    orderRaw: $orderRaw, enabledRaw: $enabledRaw,
+                    defaultOrder: InfoField.listOrder, defaultEnabled: InfoField.listEnabled,
+                    extra: ExtraToggle(title: "이름 옆 즐겨찾기 별", symbol: "star", isOn: $showStar)
+                ) { fields in
+                    ContactRow(contact: .sample, fields: fields, memo: SampleData.memo,
+                               tags: SampleData.tags, isFavorite: true, showStar: showStar,
+                               lastDate: SampleData.lastDate, trailing: nil)
+                        .padding(14)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .padding(.horizontal, 16)
+                }
+            }
         }
     }
 
     private var list: some View {
         let contacts = sortedContacts
         let last = lastByKey
+        let memos = latestMemoByKey
+        let tagsByKey = Dictionary(profiles.filter { !$0.tags.isEmpty }.map { ($0.phoneKey, $0.tags) },
+                                   uniquingKeysWith: { first, _ in first })
+        let favoriteKeys = Set(profiles.filter(\.isFavorite).map(\.phoneKey))
+        let fields = InfoField.visible(orderRaw: orderRaw, enabledRaw: enabledRaw)
         return List(contacts) { contact in
+            let lastDate = contact.allKeys.compactMap { last[$0] }.max()
             Button { onSelect(contact) } label: {
-                HStack(spacing: 12) {
-                    AvatarView(contact: contact, size: 44)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(contact.name).font(.body).foregroundStyle(.primary)
-                        if let first = contact.phones.first {
-                            Text(first.number).font(.subheadline).foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer()
-                    if let text = detail(for: contact, last: last) {
-                        Text(text).font(.footnote).foregroundStyle(.secondary)
-                    }
-                }
+                ContactRow(
+                    contact: contact,
+                    fields: fields,
+                    memo: contact.allKeys.compactMap { memos[$0] }.max { $0.createdAt < $1.createdAt }?.body,
+                    tags: contact.allKeys.compactMap { tagsByKey[$0] }.first ?? [],
+                    isFavorite: contact.allKeys.contains(where: favoriteKeys.contains),
+                    showStar: showStar,
+                    lastDate: lastDate,
+                    // 최근 연락순·오래된 순일 때는 마지막 연락 시점을 이름 줄 오른쪽에 붙인다.
+                    trailing: (sort == .recent || sort == .stale) && !fields.contains(.last)
+                        ? lastDate.map { $0.formatted(.relative(presentation: .named)) } : nil
+                )
             }
         }
         .listStyle(.plain)
@@ -157,6 +179,100 @@ struct ContactListView: View {
                 if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
             }
         }
+    }
+}
+
+/// 이름은 항상 첫 줄에 고정하고, 선택한 정보를 정해진 순서대로 이름 아래에 보여 준다.
+struct ContactRow: View {
+    let contact: ContactInfo
+    let fields: [InfoField]
+    let memo: String?
+    let tags: [String]
+    let isFavorite: Bool
+    let showStar: Bool
+    let lastDate: Date?
+    let trailing: String?
+
+    /// 전화번호와 회사는 한 줄("번호 · 회사")로 합쳐, 먼저 나오는 쪽 위치에 둔다.
+    private var lines: [InfoField] {
+        var result: [InfoField] = []
+        var subtitleAdded = false
+        for field in fields {
+            if field == .company || field == .number {
+                if !subtitleAdded { result.append(field); subtitleAdded = true }
+            } else {
+                result.append(field)
+            }
+        }
+        return result
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            AvatarView(contact: contact, size: 44)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(contact.name).font(.body.weight(.medium)).foregroundStyle(.primary).lineLimit(1)
+                    Spacer(minLength: 4)
+                    if let trailing {
+                        Text(trailing).font(.footnote).foregroundStyle(.secondary)
+                    }
+                    if showStar && isFavorite {
+                        Image(systemName: "star.fill").font(.footnote).foregroundStyle(.yellow)
+                    }
+                }
+                ForEach(lines) { field in
+                    line(field)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func line(_ field: InfoField) -> some View {
+        switch field {
+        case .company, .number:
+            if let text = subtitle {
+                Text(text).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+            }
+        case .birthday:
+            if let badge = contact.birthdayBadge {
+                Text(badge.text)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(badge.urgent ? .orange : .secondary)
+            }
+        case .last:
+            if let lastDate {
+                Text("연락 \(lastDate.formatted(.relative(presentation: .named)))")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+        case .memo:
+            if let memo, !memo.isEmpty {
+                Label(memo.replacingOccurrences(of: "\n", with: " "), systemImage: "note.text")
+                    .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+            }
+        case .tags:
+            if !tags.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(tags.prefix(3), id: \.self) { tag in
+                        Text(tag)
+                            .font(.caption2)
+                            .padding(.horizontal, 8).padding(.vertical, 2)
+                            .background(.secondary.opacity(0.18), in: Capsule())
+                    }
+                    if tags.count > 3 {
+                        Text("+\(tags.count - 3)").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+
+    private var subtitle: String? {
+        var parts: [String] = []
+        if fields.contains(.number), let number = contact.phones.first?.number { parts.append(number) }
+        if fields.contains(.company), !contact.company.isEmpty, contact.company != contact.name { parts.append(contact.company) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }
 

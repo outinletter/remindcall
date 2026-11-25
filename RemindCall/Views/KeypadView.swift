@@ -8,7 +8,11 @@ struct KeypadView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.openURL) private var openURL
+    @AppStorage("postCallEnabled") private var postCallEnabled = false
+    @AppStorage("postCallMinutes") private var postCallMinutes = 10
+    @AppStorage("labelEnabled") private var labelEnabled = false
     @State private var number = ""
+    @State private var showLabelEditor = false
 
     private let rows = [["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["*", "0", "#"]]
 
@@ -83,11 +87,18 @@ struct KeypadView: View {
     @ViewBuilder
     private var matchList: some View {
         if matches.isEmpty {
-            Text(number.filter(\.isNumber).count < 2 ? "번호 뒷자리를 입력하면\n일치하는 연락처가 나타납니다" : "일치하는 연락처가 없습니다")
-                .font(.footnote)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 12)
+            VStack(spacing: 8) {
+                Text(number.filter(\.isNumber).count < 2 ? "번호 뒷자리를 입력하면\n일치하는 연락처가 나타납니다" : "일치하는 연락처가 없습니다")
+                    .font(.footnote)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+                if labelEnabled, LabelDirectory.e164(number) != nil {
+                    Button("이 번호에 이름표 달기") { showLabelEditor = true }
+                        .font(.footnote.weight(.semibold))
+                }
+            }
+            .padding(.bottom, 12)
+            .sheet(isPresented: $showLabelEditor) { LabelEditorView(existing: nil, number: number) }
         } else {
             VStack(spacing: 8) {
                 ForEach(matches) { contact in
@@ -114,7 +125,12 @@ struct KeypadView: View {
 
     private func dial() {
         guard !number.isEmpty else { return }
-        context.insert(CallLog(phoneKey: PhoneKey.make(number)))
+        let key = PhoneKey.make(number)
+        context.insert(CallLog(phoneKey: key))
+        if postCallEnabled {
+            NotificationManager.shared.schedulePostCall(name: matches.first?.name ?? number, phoneKey: key,
+                                                        afterMinutes: postCallMinutes)
+        }
         let encoded = number.replacingOccurrences(of: "#", with: "%23")
         if let url = URL(string: "tel://\(encoded)") { openURL(url) }
     }

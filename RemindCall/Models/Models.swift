@@ -42,6 +42,19 @@ final class ContactProfile {
     }
 }
 
+/// 연락처에 없는 번호에 붙이는 이름표 (수신 화면에 표시, Call Directory 확장이 사용)
+@Model
+final class NumberLabel {
+    var number: String = ""
+    var label: String = ""
+    var createdAt: Date = Date()
+
+    init(number: String, label: String) {
+        self.number = number
+        self.label = label
+    }
+}
+
 enum PhoneKey {
     /// 숫자만 남기고, 국가번호 82는 0으로 바꾼다. (+82 10-1234-5678 → 01012345678)
     static func make(_ raw: String) -> String {
@@ -55,7 +68,7 @@ enum PhoneKey {
 
 enum Store {
     static func makeContainer() -> ModelContainer {
-        let schema = Schema([ContactNote.self, CallLog.self, ContactProfile.self])
+        let schema = Schema([ContactNote.self, CallLog.self, ContactProfile.self, NumberLabel.self])
         let cloud = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
         if let container = try? ModelContainer(for: schema, configurations: cloud) {
             return container

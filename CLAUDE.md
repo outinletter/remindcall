@@ -23,5 +23,7 @@
 ## 명령어·현재 상태
 - 스킴·타깃: `RemindCall`, 프로젝트 `RemindCall.xcodeproj` (폴더 동기화 그룹: `RemindCall/` 안에 파일을 만들면 자동 포함)
 - 기기 빌드: `xcodebuild ... -destination 'id=<UDID>' -allowProvisioningUpdates` (xcodebuild용 UDID는 `-showdestinations`로, devicectl용 ID는 `devicectl list devices`로 확인)
-- 현재: 하단 4탭, 카드 화면 별 버튼·스와이프 닫기, 연락처 정렬 5종(`ContactSort`, 설정 `@AppStorage`) 구현. 마지막 실기기 설치는 정렬 추가 전 버전. 다음: 재설치 후 정렬·제스처 감도 확인.
+- 확장: `RemindCallDirectory`(Call Directory, App Group `group.com.addvalue.remindcall`) 타깃. 프로젝트 파일은 pbxproj 쓰기 규칙 때문에 생성 스크립트(Python)로 만들었다. 타깃을 바꿀 때는 스크립트를 고쳐 다시 생성한다.
+- 설정 탭(켜기/끄기): 통화 후 메모 알림, 생일 알림(최대 50개 예약), 모르는 번호 이름표. 기본값은 모두 꺼짐.
+- 현재: 위 3기능 구현·기기 빌드 통과(설치 전). 이전: 하단 5탭, 카드 화면 별 버튼·스와이프 닫기, 연락처 정렬 5종(`ContactSort`), 표시 설정 통합(`InfoField`, `FieldSettingsView`: 미리보기+표시 중/숨김+순서, 연락처·즐겨찾기 공용, 생일 표기 `birthdayBadge` 공통) 구현. 마지막 실기기 설치는 통합 전 버전. 다음: 재설치 후 설정 시트·카드 높이 확인.
 - 시뮬레이터는 쓰지 않는다. 실기기 설치는 "설치" 요청 때만 한다.

@@ -14,6 +14,9 @@ struct CallCardView: View {
     @Query private var calls: [CallLog]
     @Query private var profiles: [ContactProfile]
 
+    @AppStorage("postCallEnabled") private var postCallEnabled = false
+    @AppStorage("postCallMinutes") private var postCallMinutes = 10
+
     @State private var showNoteEditor = false
     @State private var showTagEditor = false
     @State private var showNumberPicker = false
@@ -189,7 +192,11 @@ struct CallCardView: View {
     }
 
     private func call(_ phone: PhoneEntry) {
-        context.insert(CallLog(phoneKey: phone.key.isEmpty ? contact.primaryKey : phone.key))
+        let key = phone.key.isEmpty ? contact.primaryKey : phone.key
+        context.insert(CallLog(phoneKey: key))
+        if postCallEnabled {
+            NotificationManager.shared.schedulePostCall(name: contact.name, phoneKey: key, afterMinutes: postCallMinutes)
+        }
         let dial = phone.number.filter { $0.isNumber || $0 == "+" }
         if let url = URL(string: "tel://\(dial)") { openURL(url) }
     }

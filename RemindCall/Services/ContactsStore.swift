@@ -28,6 +28,14 @@ struct ContactInfo: Identifiable, Hashable {
         return Color(hue: Double(hue) / 360, saturation: 0.55, brightness: 0.55)
     }
 
+    /// 생일 표시 규칙(모든 화면 공통): 오늘 / 30일 이내 D-day / 그 밖에는 날짜
+    var birthdayBadge: (text: String, urgent: Bool)? {
+        guard let next = birthday?.nextBirthday() else { return nil }
+        if next.days == 0 { return ("🎂 오늘", true) }
+        if next.days <= 30 { return ("🎂 D-\(next.days)", next.days <= 7) }
+        return ("🎂 " + next.date.formatted(.dateTime.month().day()), false)
+    }
+
     func matches(_ query: String) -> Bool {
         let q = query.trimmingCharacters(in: .whitespaces)
         if q.isEmpty { return true }

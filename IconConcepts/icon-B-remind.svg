@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5EEAD4"/>
+      <stop offset="0.5" stop-color="#22C55E"/>
+      <stop offset="1" stop-color="#15803D"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FDE047"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#052e16" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- 큰 수화기 -->
+  <g filter="url(#shadow)">
+    <g transform="translate(92 120) scale(36)" fill="#FFFFFF">
+      <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+    </g>
+  </g>
+  <!-- 리마인드 시계 배지 -->
+  <g filter="url(#shadow)">
+    <circle cx="742" cy="282" r="150" fill="url(#gold)"/>
+  </g>
+  <circle cx="742" cy="282" r="104" fill="#FFFFFF"/>
+  <g stroke="#92400E" stroke-width="22" stroke-linecap="round" fill="none">
+    <path d="M742 282 V216"/>
+    <path d="M742 282 L790 312"/>
+  </g>
+  <circle cx="742" cy="282" r="14" fill="#92400E"/>
+</svg>
