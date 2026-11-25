@@ -24,6 +24,7 @@ struct SettingsView: View {
                 postCallSection
                 birthdaySection
                 labelSection
+                infoSection
             }
             .navigationTitle("설정")
             .alert("알림이 꺼져 있습니다", isPresented: $showDenied) {
@@ -115,6 +116,20 @@ struct SettingsView: View {
             Text("수신 전화")
         } footer: {
             Text("연락처에 없는 번호에서 전화가 오면 정해 둔 이름표(예: 배달 기사)가 수신 화면에 표시됩니다. 전화 앱 설정에서 RemindCall을 허용해야 하며, 이름표 한 줄만 표시할 수 있어요.")
+        }
+    }
+
+    // MARK: 정보
+
+    private var infoSection: some View {
+        Section("정보") {
+            Link(destination: URL(string: "https://outinletter.github.io/privacy-policy/remindcall.html")!) {
+                Label("개인정보 처리방침", systemImage: "hand.raised")
+            }
+            Link(destination: URL(string: "https://github.com/outinletter/remindcall")!) {
+                Label("지원 및 문의", systemImage: "questionmark.circle")
+            }
+            LabeledContent("버전", value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
         }
     }
 

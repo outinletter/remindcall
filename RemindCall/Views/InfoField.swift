@@ -63,7 +63,7 @@ extension ContactInfo {
             id: "sample",
             name: "김민수",
             company: "ABC 상사",
-            phones: [PhoneEntry(label: "휴대폰", number: "010-1234-5678")],
+            phones: [PhoneEntry(label: "휴대폰", number: "010-0000-0000")],
             birthday: Calendar.current.dateComponents([.month, .day], from: soon),
             photo: nil
         )
