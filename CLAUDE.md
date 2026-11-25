@@ -25,5 +25,7 @@
 - 기기 빌드: `xcodebuild ... -destination 'id=<UDID>' -allowProvisioningUpdates` (xcodebuild용 UDID는 `-showdestinations`로, devicectl용 ID는 `devicectl list devices`로 확인)
 - 확장: `RemindCallDirectory`(Call Directory, App Group `group.com.addvalue.remindcall`) 타깃. 프로젝트 파일은 pbxproj 쓰기 규칙 때문에 생성 스크립트(Python)로 만들었다. 타깃을 바꿀 때는 스크립트를 고쳐 다시 생성한다.
 - 설정 탭(켜기/끄기): 통화 후 메모 알림, 생일 알림(최대 50개 예약), 모르는 번호 이름표. 기본값은 모두 꺼짐.
-- 현재: 위 3기능 구현·기기 빌드 통과(설치 전). 이전: 하단 5탭, 카드 화면 별 버튼·스와이프 닫기, 연락처 정렬 5종(`ContactSort`), 표시 설정 통합(`InfoField`, `FieldSettingsView`: 미리보기+표시 중/숨김+순서, 연락처·즐겨찾기 공용, 생일 표기 `birthdayBadge` 공통) 구현. 마지막 실기기 설치는 통합 전 버전. 다음: 재설치 후 설정 시트·카드 높이 확인.
+- 제출 값(App Store Connect, 앱 ID 6839308482): 카테고리 생산성/유틸리티, 연령 4+, 무료, 저작권 2026 BS Jeon, 지원 URL=GitHub 저장소, 처리방침 `outinletter.github.io/privacy-policy/remindcall.html`, 프라이버시 "수집 안 함". 문구·심사 노트는 `app-store/METADATA.md`, 광고용 스크린샷은 `app-store/screenshots/`(1206×2622, 개인정보 일반화본).
+- 업로드: `xcodebuild archive` 후 `-exportArchive`(method app-store-connect, destination upload).
+- 현재: 1.0 (1) 2026-11-26 심사 제출 → 2.1 정보 요청 받아 심사 노트 보강+실기기 녹화 첨부 후 재제출(심사 대기 중). 아이콘은 전화기 메인/카드 서브로 변경(다음 빌드부터 적용). 다음: 심사 결과 대응.
 - 시뮬레이터는 쓰지 않는다. 실기기 설치는 "설치" 요청 때만 한다.

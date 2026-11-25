@@ -74,3 +74,19 @@ How to review:
  - Unknown-number labels: the "RemindCallDirectory" Call Directory extension shows labels the user typed for numbers that are not in Contacts. Enable it in Settings > Apps > Phone > Call Blocking & Identification. The app never receives or stores incoming phone numbers.
 
 The app does not record calls and does not read text messages or the system call log. Push notification entitlement (aps-environment) is used only by CloudKit sync; the app sends no remote notifications.
+
+## 심사 노트 추가분 (2.1 Information Needed 응답, 2026-11-26)
+
+Append the following to the Notes field above.
+
+1. Screen recording: a screen recording captured on a physical iPhone (latest iOS), starting from app launch, is attached to App Review Information / linked here: <URL>. It shows Contacts permission, the Contacts tab, opening a card, the Keypad lookup, Favorites, Recents, the display settings sheet and the Settings toggles. The app has no account, login, user-generated content shared with other users, or paid features, so no registration/deletion/reporting/blocking flows exist.
+
+2. Purpose and audience: iOS shows only a contact's name during calls and in the Phone app. RemindCall helps anyone who talks with many people (family, friends, clients, community members) recall who someone is before calling: it shows the number, company, birthday countdown, the user's own notes and tags, favorites, and the last time they called from the app, as one card. Optional reminders: post-call note prompt, birthday alerts, labels for unknown numbers.
+
+3. Setup: no login or sample files needed. Allow Contacts on first launch. If the device has no contacts, add a few with phone numbers and birthdays. All main features are on the 5 tabs (Contacts, Favorites, Keypad, Recents, Settings). Settings features are optional and off by default.
+
+4. External services: Apple frameworks only - Contacts (read only), SwiftData + CloudKit private database (iCloud sync of the user's own notes, tags, favorites), UserNotifications (local), CallKit Call Directory extension (user-typed labels for unknown numbers, stored in an App Group on device). No third-party SDKs, servers, analytics, ads, authentication, payment or AI services.
+
+5. Regional differences: none. The app works identically in all regions. It is localized in Korean; layouts and features do not change by region. Phone-number matching handles Korean +82 numbers and local formats.
+
+6. Regulated industry / protected material: not applicable. The app contains no third-party protected content; it only shows the user's own contacts and notes.
