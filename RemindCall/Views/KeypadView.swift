@@ -55,29 +55,24 @@ struct KeypadView: View {
             .padding(.horizontal, 16)
             .frame(height: 64)
 
-            VStack(spacing: 14) {
+            VStack(spacing: 16) {
                 ForEach(rows, id: \.self) { row in
-                    HStack(spacing: 24) {
+                    HStack(spacing: 26) {
                         ForEach(row, id: \.self) { key in
-                            Button { number.append(key) } label: {
-                                Text(key)
-                                    .font(.system(size: 34, weight: .regular, design: .rounded))
-                                    .foregroundStyle(.primary)
-                                    .frame(width: 78, height: 78)
-                                    .background(.secondary.opacity(0.18), in: Circle())
-                            }
+                            Button { number.append(key) } label: { KeyFace(key: key) }
+                                .buttonStyle(KeyPressStyle())
                         }
                     }
                 }
                 Button(action: dial) {
                     Image(systemName: "phone.fill")
-                        .font(.system(size: 30))
+                        .font(.system(size: 34))
                         .foregroundStyle(.white)
-                        .frame(width: 78, height: 78)
-                        .background(.green, in: Circle())
+                        .frame(width: 80, height: 80)
+                        .background(Color(red: 0.2, green: 0.78, blue: 0.35), in: Circle())
                 }
-                .disabled(number.isEmpty)
-                .opacity(number.isEmpty ? 0.4 : 1)
+                .buttonStyle(KeyPressStyle())
+                .padding(.top, 4)
             }
             .padding(.top, 8)
             Spacer(minLength: 0)
@@ -120,6 +115,32 @@ struct KeypadView: View {
                     }
                 }
             }
+        }
+    }
+
+    /// iOS 전화 앱처럼 숫자 아래에 문자 표시
+    private struct KeyFace: View {
+        let key: String
+        private static let letters = ["2": "ABC", "3": "DEF", "4": "GHI", "5": "JKL", "6": "MNO",
+                                      "7": "PQRS", "8": "TUV", "9": "WXYZ", "0": "+"]
+        var body: some View {
+            VStack(spacing: -2) {
+                Text(key)
+                    .font(.system(size: key == "*" ? 44 : 36, weight: .regular))
+                    .offset(y: key == "*" ? 6 : 0)
+                if let sub = Self.letters[key] {
+                    Text(sub).font(.system(size: 10, weight: .bold)).tracking(2)
+                }
+            }
+            .foregroundStyle(.primary)
+            .frame(width: 80, height: 80)
+            .background(Color(.systemGray5), in: Circle())
+        }
+    }
+
+    private struct KeyPressStyle: ButtonStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            configuration.label.brightness(configuration.isPressed ? 0.25 : 0)
         }
     }
 
