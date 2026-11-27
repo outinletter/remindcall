@@ -8,11 +8,11 @@ enum ContactSort: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .name: "이름순"
-        case .recent: "최근 연락순"
-        case .stale: "연락 오래된 순"
-        case .birthday: "생일 임박순"
-        case .favorites: "즐겨찾기 먼저"
+        case .name: L("이름순")
+        case .recent: L("최근 연락순")
+        case .stale: L("연락 오래된 순")
+        case .birthday: L("생일 임박순")
+        case .favorites: L("즐겨찾기 먼저")
         }
     }
 
@@ -144,24 +144,40 @@ struct ContactListView: View {
                                    uniquingKeysWith: { first, _ in first })
         let favoriteKeys = Set(profiles.filter(\.isFavorite).map(\.phoneKey))
         let fields = InfoField.visible(orderRaw: orderRaw, enabledRaw: enabledRaw)
-        return List(contacts) { contact in
+        func row(_ contact: ContactInfo) -> some View {
             let lastDate = contact.allKeys.compactMap { last[$0] }.max()
-            Button { onSelect(contact) } label: {
+            let favorite = contact.allKeys.contains(where: favoriteKeys.contains)
+            return Button { onSelect(contact) } label: {
                 ContactRow(
                     contact: contact,
                     fields: fields,
                     memo: contact.allKeys.compactMap { memos[$0] }.max { $0.createdAt < $1.createdAt }?.body,
                     tags: contact.allKeys.compactMap { tagsByKey[$0] }.first ?? [],
-                    isFavorite: contact.allKeys.contains(where: favoriteKeys.contains),
+                    isFavorite: favorite,
                     showStar: showStar,
                     lastDate: lastDate,
                     // 최근 연락순·오래된 순일 때는 마지막 연락 시점을 이름 줄 오른쪽에 붙인다.
                     trailing: (sort == .recent || sort == .stale) && !fields.contains(.last)
-                        ? lastDate.map { $0.formatted(.relative(presentation: .named)) } : nil
+                        ? lastDate.map { $0.formatted(.relative(presentation: .named).locale(LanguageManager.shared.locale)) } : nil
                 )
+            }
+            .contactMenu(contact, isFavorite: favorite, swipe: true)
+        }
+        return List {
+            if sort == .name && query.isEmpty {
+                // 이름순일 때는 첫 글자로 묶고 오른쪽 색인 바로 이동한다.
+                ForEach(IndexGroup.make(contacts), id: \.title) { group in
+                    Section(group.title) {
+                        ForEach(group.contacts) { row($0) }
+                    }
+                    .indexLabel(group.title)
+                }
+            } else {
+                ForEach(contacts) { row($0) }
             }
         }
         .listStyle(.plain)
+        .indexBarVisible()
         .overlay {
             if contacts.isEmpty && !store.isLoading {
                 ContentUnavailableView.search(text: query)
@@ -193,11 +209,17 @@ struct ContactRow: View {
     let lastDate: Date?
     let trailing: String?
 
+    /// 번호 줄이 있으면 생일은 그 줄 오른쪽에 붙인다.
+    private var birthdayInline: Bool {
+        fields.contains(.number) && fields.contains(.birthday) && !contact.phones.isEmpty
+    }
+
     /// 전화번호와 회사는 한 줄("번호 · 회사")로 합쳐, 먼저 나오는 쪽 위치에 둔다.
     private var lines: [InfoField] {
         var result: [InfoField] = []
         var subtitleAdded = false
         for field in fields {
+            if field == .birthday && birthdayInline { continue }
             if field == .company || field == .number {
                 if !subtitleAdded { result.append(field); subtitleAdded = true }
             } else {
@@ -232,8 +254,16 @@ struct ContactRow: View {
     private func line(_ field: InfoField) -> some View {
         switch field {
         case .company, .number:
-            if let text = subtitle {
-                Text(text).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+            HStack(spacing: 6) {
+                if let text = subtitle {
+                    Text(text).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                }
+                if birthdayInline, let badge = contact.birthdayBadge {
+                    Text(badge.text)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(badge.urgent ? .orange : .secondary)
+                        .fixedSize()
+                }
             }
         case .birthday:
             if let badge = contact.birthdayBadge {
@@ -243,13 +273,16 @@ struct ContactRow: View {
             }
         case .last:
             if let lastDate {
-                Text("연락 \(lastDate.formatted(.relative(presentation: .named)))")
+                Text("연락 \(lastDate.formatted(.relative(presentation: .named).locale(LanguageManager.shared.locale)))")
                     .font(.footnote).foregroundStyle(.secondary)
             }
         case .memo:
             if let memo, !memo.isEmpty {
-                Label(memo.replacingOccurrences(of: "\n", with: " "), systemImage: "note.text")
-                    .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                HStack(spacing: 4) {
+                    Image(systemName: "note.text")
+                    Text(memo.replacingOccurrences(of: "\n", with: " ")).lineLimit(1)
+                }
+                .font(.footnote).foregroundStyle(.secondary)
             }
         case .tags:
             if !tags.isEmpty {
@@ -296,5 +329,54 @@ struct AvatarView: View {
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
+    }
+}
+
+/// 이름 첫 글자 묶음: 한글은 초성(ㄱ~ㅎ), 영문은 A~Z, 그 밖은 #
+struct IndexGroup {
+    let title: String
+    let contacts: [ContactInfo]
+
+    static func make(_ contacts: [ContactInfo]) -> [IndexGroup] {
+        var order: [String] = []
+        var groups: [String: [ContactInfo]] = [:]
+        for contact in contacts {
+            let key = title(for: contact.name)
+            if groups[key] == nil { order.append(key) }
+            groups[key, default: []].append(contact)
+        }
+        return order.sorted { rank($0) < rank($1) }.map { IndexGroup(title: $0, contacts: groups[$0] ?? []) }
+    }
+
+    private static let initials = Array("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
+    private static let merge: [Character: Character] = ["ㄲ": "ㄱ", "ㄸ": "ㄷ", "ㅃ": "ㅂ", "ㅆ": "ㅅ", "ㅉ": "ㅈ"]
+
+    static func title(for name: String) -> String {
+        guard let first = name.trimmingCharacters(in: .whitespaces).first else { return "#" }
+        if let scalar = first.unicodeScalars.first, (0xAC00...0xD7A3).contains(scalar.value) {
+            let initial = initials[Int(scalar.value - 0xAC00) / 588]
+            return String(merge[initial] ?? initial)
+        }
+        if let ascii = first.uppercased().first, ascii.isASCII, ascii.isLetter { return String(ascii) }
+        return "#"
+    }
+
+    /// 한글 → 영문 → #
+    private static func rank(_ title: String) -> (Int, String) {
+        if title == "#" { return (2, title) }
+        if let scalar = title.unicodeScalars.first, scalar.isASCII { return (1, title) }
+        return (0, title)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func indexLabel(_ title: String) -> some View {
+        if #available(iOS 26.0, *) { sectionIndexLabel(title) } else { self }
+    }
+
+    @ViewBuilder
+    func indexBarVisible() -> some View {
+        if #available(iOS 26.0, *) { listSectionIndexVisibility(.visible) } else { self }
     }
 }

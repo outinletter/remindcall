@@ -106,7 +106,7 @@ struct SettingsView: View {
                 NavigationLink {
                     NumberLabelsView()
                 } label: {
-                    LabeledContent("이름표 관리", value: "\(labels.count)개")
+                    LabeledContent("이름표 관리", value: L("\(labels.count)개"))
                 }
                 switch directoryStatus {
                 case .enabled:
@@ -129,7 +129,23 @@ struct SettingsView: View {
 
     // MARK: 정보
 
+    @ViewBuilder
     private var infoSection: some View {
+        Section {
+            // iOS 표준: 앱별 언어는 시스템 설정 > 앱 > RemindCall > 언어에서 바꾼다.
+            Picker(selection: Binding(get: { LanguageManager.shared.code },
+                                      set: { LanguageManager.shared.set($0) })) {
+                Text("시스템 설정").tag("")
+                ForEach(LanguageManager.supported, id: \.self) { Text(LanguageManager.name($0)).tag($0) }
+            } label: {
+                Label("언어", systemImage: "globe")
+            }
+            .pickerStyle(.navigationLink)
+        } header: {
+            Text("언어")
+        } footer: {
+            Text("한국어, 영어, 일본어, 중국어(간체)를 지원합니다. 시스템 설정을 고르면 iPhone 언어를 따릅니다.")
+        }
         Section("정보") {
             Link(destination: URL(string: "https://outinletter.github.io/privacy-policy/remindcall.html")!) {
                 Label("개인정보 처리방침", systemImage: "hand.raised")
@@ -161,8 +177,8 @@ struct SettingsView: View {
     }
 
     private static func hourText(_ hour: Int) -> String {
-        let h12 = hour % 12 == 0 ? 12 : hour % 12
-        return (hour < 12 ? "오전 " : "오후 ") + "\(h12)시"
+        let date = Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: .now) ?? .now
+        return date.formatted(.dateTime.hour().locale(LanguageManager.shared.locale))
     }
 }
 
@@ -234,7 +250,7 @@ struct LabelEditorView: View {
                     Text("국내 번호는 010-1234-5678처럼, 해외 번호는 +국가번호로 입력하세요.")
                 }
             }
-            .navigationTitle(existing == nil ? "이름표 추가" : "이름표 편집")
+            .navigationTitle(existing == nil ? L("이름표 추가") : L("이름표 편집"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("취소") { dismiss() } }
@@ -263,9 +279,9 @@ enum BirthdayAlert {
 
     static func title(_ days: Int) -> String {
         switch days {
-        case 0: "당일"
-        case 7: "1주 전"
-        default: "\(days)일 전"
+        case 0: L("당일")
+        case 7: L("1주 전")
+        default: L("\(days)일 전")
         }
     }
 

@@ -67,8 +67,9 @@ enum PhoneKey {
 }
 
 enum Store {
-    static func makeContainer() -> ModelContainer {
+    @MainActor static func makeContainer() -> ModelContainer {
         let schema = Schema([ContactNote.self, CallLog.self, ContactProfile.self, NumberLabel.self])
+        if Demo.isOn { return Demo.makeContainer(schema: schema) }
         let cloud = ModelConfiguration(schema: schema, cloudKitDatabase: .automatic)
         if let container = try? ModelContainer(for: schema, configurations: cloud) {
             return container

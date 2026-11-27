@@ -1,0 +1,62 @@
+{
+  "sourceLanguage": "ko",
+  "version": "1.0",
+  "strings": {
+    "NSContactsUsageDescription": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "연락처의 이름, 번호, 생일을 카드로 보여 주기 위해 사용합니다. 연락처 정보는 기기 밖으로 전송하지 않습니다."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "連絡先の名前、番号、誕生日をカードで表示するために使用します。連絡先の情報はデバイスの外に送信しません。"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于以卡片形式显示联系人的姓名、号码和生日。联系人信息不会传出设备。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used to show your contacts' names, numbers and birthdays as cards. Contact information never leaves your device."
+          }
+        }
+      }
+    },
+    "CFBundleDisplayName": {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RemindCall"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RemindCall"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RemindCall"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RemindCall"
+          }
+        }
+      }
+    }
+  }
+}

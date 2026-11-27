@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct InfoCard<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let symbol: String
     @ViewBuilder var content: Content
 
@@ -21,6 +21,7 @@ struct InfoCard<Content: View>: View {
 struct PhoneCard: View {
     let phones: [PhoneEntry]
     let onCall: (PhoneEntry) -> Void
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         InfoCard(title: "전화번호", symbol: "phone") {
@@ -43,6 +44,16 @@ struct PhoneCard: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(L("\(phone.label) \(phone.number)에 전화"))
+                .contextMenu {
+                    Button { onCall(phone) } label: { Label("전화", systemImage: "phone") }
+                    Button { ContactActions.message(phone, openURL: openURL) } label: {
+                        Label("메시지", systemImage: "message")
+                    }
+                    Button { ContactActions.copy(phone.number) } label: {
+                        Label("번호 복사", systemImage: "doc.on.doc")
+                    }
+                }
             }
         }
     }
@@ -55,14 +66,16 @@ struct BirthdayCard: View {
         if let next = birthday.nextBirthday() {
             InfoCard(title: "생일", symbol: "gift") {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(next.date.formatted(.dateTime.month().day()))
+                    Text(next.date.formatted(.dateTime.month().day().locale(LanguageManager.shared.locale)))
                         .font(.title2.weight(.semibold))
                     if let turning = next.turning {
                         Text("\(turning)번째 생일").font(.subheadline).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Text(next.days == 0 ? "오늘!" : "D-\(next.days)")
+                    Text(next.days == 0 ? L("오늘!") : "D-\(next.days)")
                         .font(.title3.weight(.bold))
+                        .accessibilityLabel(next.days == 0 ? L("오늘이 생일이에요")
+                                            : L("생일까지 \(next.days)일"))
                         .foregroundStyle(next.days <= 7 ? .orange : .secondary)
                 }
             }
@@ -82,11 +95,12 @@ struct MemoCard: View {
             ForEach(notes.prefix(5)) { note in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(note.body)
-                    Text(note.createdAt.formatted(date: .abbreviated, time: .omitted))
+                    Text(note.createdAt.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: LanguageManager.shared.locale)))
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contextMenu {
+                    Button("복사", systemImage: "doc.on.doc") { ContactActions.copy(note.body) }
                     Button("삭제", systemImage: "trash", role: .destructive) { onDelete(note) }
                 }
             }
@@ -108,7 +122,7 @@ struct TagCard: View {
                         .background(.white.opacity(0.15), in: Capsule())
                 }
                 Button(action: onEdit) {
-                    Label(tags.isEmpty ? "태그 추가" : "편집", systemImage: "plus")
+                    Label(tags.isEmpty ? L("태그 추가") : L("편집"), systemImage: "plus")
                         .font(.subheadline)
                         .padding(.horizontal, 12).padding(.vertical, 6)
                         .overlay(Capsule().strokeBorder(.white.opacity(0.35)))
@@ -129,7 +143,7 @@ struct HistoryCard: View {
             ForEach(calls.prefix(5)) { log in
                 HStack {
                     Image(systemName: "phone.arrow.up.right").foregroundStyle(.green)
-                    Text(log.calledAt.formatted(date: .abbreviated, time: .shortened))
+                    Text(log.calledAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened, locale: LanguageManager.shared.locale)))
                 }
             }
             Text("RemindCall에서 건 통화만 기록됩니다")

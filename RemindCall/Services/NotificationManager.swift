@@ -19,8 +19,8 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         self.container = container
         center.delegate = self
         let addNote = UNTextInputNotificationAction(
-            identifier: "ADD_NOTE", title: "메모 남기기", options: [],
-            textInputButtonTitle: "저장", textInputPlaceholder: "통화 내용을 한 줄로"
+            identifier: "ADD_NOTE", title: L("메모 남기기"), options: [],
+            textInputButtonTitle: L("저장"), textInputPlaceholder: L("통화 내용을 한 줄로")
         )
         let category = UNNotificationCategory(identifier: "POST_CALL", actions: [addNote],
                                               intentIdentifiers: [], options: [])
@@ -43,8 +43,8 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
     func schedulePostCall(name: String, phoneKey: String, afterMinutes: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "\(name)님과 통화는 어땠나요?"
-        content.body = "알림을 길게 눌러 메모를 바로 남겨 보세요."
+        content.title = L("\(name)님과 통화는 어땠나요?")
+        content.body = L("알림을 길게 눌러 메모를 바로 남겨 보세요.")
         content.categoryIdentifier = "POST_CALL"
         content.userInfo = ["phoneKey": phoneKey]
         content.sound = .default
@@ -77,17 +77,22 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             guard let next = contact.birthday?.nextBirthday(),
                   let base = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: next.date) else { continue }
             let memo = contact.allKeys.compactMap { memos[$0] }.first.map { "\n📝 \($0)" } ?? ""
-            let turning = next.turning.map { " (\($0)번째 생일)" } ?? ""
+            let turning = next.turning.map { " (" + L("\($0)번째 생일") + ")" } ?? ""
             for days in offsets {
                 guard let fire = calendar.date(byAdding: .day, value: -days, to: base) else { continue }
                 let when = switch days {
-                case 0: "오늘"
-                case 1: "내일"
-                case 7: "일주일 뒤"
-                default: "\(days)일 뒤"
+                case 0: L("오늘")
+                case 1: L("내일")
+                case 7: L("일주일 뒤")
+                default: L("\(days)일 뒤")
                 }
-                let title = days == 0 ? "🎂 \(contact.name)님 생일" : "🎂 \(when) \(contact.name)님 생일"
-                let body = days <= 1 ? "\(when)이 생일이에요" : "\(when) 생일이에요"
+                let title = days == 0 ? L("🎂 \(contact.name)님 생일")
+                    : L("🎂 \(when) \(contact.name)님 생일")
+                let body = switch days {
+                case 0: L("오늘이 생일이에요")
+                case 1: L("내일이 생일이에요")
+                default: L("\(when) 생일이에요")
+                }
                 items.append(Item(fire: fire, title: title, body: "\(body)\(turning)\(memo)",
                                   id: "bday-\(contact.id)-\(days)", key: contact.primaryKey))
             }

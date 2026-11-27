@@ -19,6 +19,7 @@
 - CloudKit 조건: 모델 속성은 모두 기본값을 가지고 unique 제약을 쓰지 않는다.
 - 앱 데이터와 연락처는 번호 키(`PhoneKey.make`: 숫자만, 82→0)로 연결한다. `CNContact.identifier`는 기기마다 달라 키로 쓰지 않는다.
 - 연락처 원본을 서버로 보내거나 수정하지 않는다.
+- 다국어: 한국어(원본)·영어·일본어·중국어 간체. 문구는 `Localizable.xcstrings`(권한 문구는 `InfoPlist.xcstrings`)에 en·ja·zh-Hans를 함께 추가한다. 화면 문구가 아닌 String 값은 `L(...)`(고른 앱 언어 번들), 날짜 형식은 `.locale(LanguageManager.shared.locale)`로 쓴다. 언어는 설정 탭에서 고르고 `LanguageManager`가 AppleLanguages 저장과 Bundle 문자열 조회 전환으로 즉시 적용한다.
 
 ## 명령어·현재 상태
 - 스킴·타깃: `RemindCall`, 프로젝트 `RemindCall.xcodeproj` (폴더 동기화 그룹: `RemindCall/` 안에 파일을 만들면 자동 포함)
@@ -27,5 +28,5 @@
 - 설정 탭(켜기/끄기): 통화 후 메모 알림, 생일 알림(최대 50개 예약), 모르는 번호 이름표. 기본값은 모두 꺼짐.
 - 제출 값(App Store Connect, 앱 ID 6839308482): 카테고리 생산성/유틸리티, 연령 4+, 무료, 저작권 2026 BS Jeon, 지원 URL=GitHub 저장소, 처리방침 `outinletter.github.io/privacy-policy/remindcall.html`, 프라이버시 "수집 안 함". 문구·심사 노트는 `app-store/METADATA.md`, 광고용 스크린샷은 `app-store/screenshots/`(1206×2622, 개인정보 일반화본).
 - 업로드: `xcodebuild archive` 후 `-exportArchive`(method app-store-connect, destination upload).
-- 현재: 1.0 (1) 승인됨(배포 준비됨). 1.0.1 (2) 키패드 iOS 디자인+새 아이콘, 2026-11-26 심사 제출(심사 대기 중). 버전·빌드는 xcodebuild 인자(MARKETING_VERSION, CURRENT_PROJECT_VERSION)로 지정했으니 다음엔 생성 스크립트 값도 올릴 것.
+- 현재: 1.0.1 (2) 승인됨(배포 준비됨). 1.1 (3) 2026-11-27 심사 제출(4개 언어 메타데이터·스크린샷). 스토어 스크린샷은 `-demoMode YES -appLanguage <code>` 실행 인자로 시연 데이터를 띄워 캡처. 다음: 심사 결과 대응, 생성 스크립트의 버전을 1.1 (3)으로 맞출 것.
 - 시뮬레이터는 쓰지 않는다. 실기기 설치는 "설치" 요청 때만 한다.

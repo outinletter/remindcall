@@ -31,9 +31,9 @@ struct ContactInfo: Identifiable, Hashable {
     /// 생일 표시 규칙(모든 화면 공통): 오늘 / 30일 이내 D-day / 그 밖에는 날짜
     var birthdayBadge: (text: String, urgent: Bool)? {
         guard let next = birthday?.nextBirthday() else { return nil }
-        if next.days == 0 { return ("🎂 오늘", true) }
+        if next.days == 0 { return ("🎂 " + L("오늘"), true) }
         if next.days <= 30 { return ("🎂 D-\(next.days)", next.days <= 7) }
-        return ("🎂 " + next.date.formatted(.dateTime.month().day()), false)
+        return ("🎂 " + next.date.formatted(.dateTime.month().day().locale(LanguageManager.shared.locale)), false)
     }
 
     func matches(_ query: String) -> Bool {
@@ -97,6 +97,15 @@ final class ContactsStore {
     }
 
     func requestAndLoad() async {
+        if Demo.isOn {
+            status = .authorized
+            contacts = Demo.contacts()
+            byKey = Dictionary(contacts.flatMap { contact in contact.allKeys.map { ($0, contact) } },
+                               uniquingKeysWith: { first, _ in first })
+            return
+        }
+        // 설정에서 권한을 바꾸고 돌아온 경우도 반영
+        status = CNContactStore.authorizationStatus(for: .contacts)
         if status == .notDetermined {
             _ = try? await CNContactStore().requestAccess(for: .contacts)
             status = CNContactStore.authorizationStatus(for: .contacts)
@@ -124,7 +133,7 @@ final class ContactsStore {
         try? CNContactStore().enumerateContacts(with: request) { contact, _ in
             let phones = contact.phoneNumbers.map { value -> PhoneEntry in
                 let raw = value.label.map { CNLabeledValue<NSString>.localizedString(forLabel: $0) } ?? ""
-                return PhoneEntry(label: raw.isEmpty ? "전화" : raw, number: value.value.stringValue)
+                return PhoneEntry(label: raw.isEmpty ? L("전화") : raw, number: value.value.stringValue)
             }
             var name = CNContactFormatter.string(from: contact, style: .fullName) ?? ""
             if name.isEmpty { name = contact.organizationName }

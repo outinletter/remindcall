@@ -9,12 +9,12 @@ enum InfoField: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .birthday: "생일"
-        case .company: "회사"
-        case .number: "전화번호"
-        case .last: "마지막 연락"
-        case .memo: "메모 미리보기"
-        case .tags: "태그"
+        case .birthday: L("생일")
+        case .company: L("회사")
+        case .number: L("전화번호")
+        case .last: L("마지막 연락")
+        case .memo: L("메모 미리보기")
+        case .tags: L("태그")
         }
     }
 
@@ -61,9 +61,9 @@ extension ContactInfo {
         let soon = Calendar.current.date(byAdding: .day, value: 3, to: .now) ?? .now
         return ContactInfo(
             id: "sample",
-            name: "김민수",
-            company: "ABC 상사",
-            phones: [PhoneEntry(label: "휴대폰", number: "010-0000-0000")],
+            name: L("김민수"),
+            company: L("ABC 상사"),
+            phones: [PhoneEntry(label: L("휴대폰"), number: "010-0000-0000")],
             birthday: Calendar.current.dateComponents([.month, .day], from: soon),
             photo: nil
         )
@@ -71,20 +71,20 @@ extension ContactInfo {
 }
 
 enum SampleData {
-    static let memo = "지난달 이사함. 아들 이름은 민수"
-    static let tags = ["가족", "동창", "거래처"]
+    static var memo: String { L("지난달 이사함. 아들 이름은 민수") }
+    static var tags: [String] { [L("가족"), L("동창"), L("거래처")] }
     static var lastDate: Date { Date.now.addingTimeInterval(-3 * 86_400) }
 }
 
 struct ExtraToggle {
-    let title: String
+    let title: LocalizedStringKey
     let symbol: String
     let isOn: Binding<Bool>
 }
 
 /// 표시 설정 시트: 위에 미리보기, "표시 중"(순서 변경·숨기기), "숨김"(추가).
 struct FieldSettingsView<Preview: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     @Binding var orderRaw: String
     @Binding var enabledRaw: String
     let defaultOrder: String
@@ -121,7 +121,7 @@ struct FieldSettingsView<Preview: View>: View {
                                 Image(systemName: "minus.circle.fill").foregroundStyle(.red).imageScale(.large)
                             }
                             .buttonStyle(.borderless)
-                            .accessibilityLabel("\(field.title) 숨기기")
+                            .accessibilityLabel(L("\(field.title) 숨기기"))
                             Label(field.title, systemImage: field.symbol)
                         }
                     }
@@ -140,7 +140,7 @@ struct FieldSettingsView<Preview: View>: View {
                                     Image(systemName: "plus.circle.fill").foregroundStyle(.green).imageScale(.large)
                                 }
                                 .buttonStyle(.borderless)
-                                .accessibilityLabel("\(field.title) 표시하기")
+                                .accessibilityLabel(L("\(field.title) 표시하기"))
                                 Label(field.title, systemImage: field.symbol).foregroundStyle(.secondary)
                             }
                         }

@@ -90,6 +90,7 @@ struct FavoritesView: View {
             )
         }
         .buttonStyle(.plain)
+        .contactMenu(contact, isFavorite: true)
     }
 
     private var latestMemos: [String: ContactNote] {
@@ -147,7 +148,7 @@ struct FavoriteCard: View {
             }
         case .last:
             if let lastDate {
-                Text("연락 \(lastDate.formatted(.relative(presentation: .named)))")
+                Text("연락 \(lastDate.formatted(.relative(presentation: .named).locale(LanguageManager.shared.locale)))")
                     .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
             }
         case .memo:

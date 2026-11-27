@@ -24,7 +24,7 @@ struct RootView: View {
     /// 이 값이 바뀌면 생일 알림을 다시 예약한다.
     private var birthdayKey: String {
         "\(store.contacts.count)|\(bdayEnabled)|\(bdayHour)|\(bdayAlert)|\(bdaySecondAlert)|\(bdayFavoritesOnly)|"
-            + "\(profiles.filter(\.isFavorite).count)|\(notes.count)|\(refreshToken)"
+            + "\(profiles.filter(\.isFavorite).count)|\(notes.count)|\(refreshToken)|\(LanguageManager.shared.code)"
     }
 
     /// 이 값이 바뀌면 이름표 목록을 확장에 다시 전달한다.
@@ -32,10 +32,15 @@ struct RootView: View {
         "\(labelEnabled)|" + labels.map { $0.number + $0.label }.joined(separator: ";")
     }
 
+    private var birthdaysToday: Int {
+        store.contacts.filter { $0.birthday?.nextBirthday()?.days == 0 }.count
+    }
+
     var body: some View {
         TabView(selection: $tab) {
             FavoritesView(store: store) { selected = $0 }
                 .tabItem { Label("즐겨찾기", systemImage: "star.fill") }
+                .badge(birthdaysToday) // 오늘 생일인 사람 수
                 .tag(Tab.favorites)
             RecentsView(store: store) { selected = $0 }
                 .tabItem { Label("최근", systemImage: "clock.fill") }
@@ -51,12 +56,17 @@ struct RootView: View {
                 .tag(Tab.settings)
         }
         .task { await store.requestAndLoad() }
-        .task(id: birthdayKey) { await rescheduleBirthdays() }
+        .task(id: birthdayKey) { if !Demo.isOn { await rescheduleBirthdays() } }
         .task(id: labelKey) {
+            guard !Demo.isOn else { return }
             LabelDirectory.sync(labels: labels.map { ($0.number, $0.label) }, enabled: labelEnabled)
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { refreshToken = UUID() }
+            if phase == .active {
+                refreshToken = UUID()
+                // 연락처 앱에서 바뀐 이름·번호·생일을 다시 읽는다.
+                Task { await store.requestAndLoad() }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .openContactKey)) { notification in
             if let key = notification.userInfo?["phoneKey"] as? String, let contact = store.byKey[key] {

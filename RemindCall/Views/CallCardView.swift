@@ -20,6 +20,7 @@ struct CallCardView: View {
     @State private var showNoteEditor = false
     @State private var showTagEditor = false
     @State private var showNumberPicker = false
+    @State private var showMessagePicker = false
 
     // 오른쪽 스와이프·아래로 끌어내리기로 닫기
     @State private var dragOffset: CGSize = .zero
@@ -64,7 +65,8 @@ struct CallCardView: View {
                         HistoryCard(calls: calls)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.top, 12)
+                    .padding(.bottom, 28)
                     .background(GeometryReader { proxy in
                         Color.clear.preference(key: ScrollOffsetKey.self,
                                                value: proxy.frame(in: .named("cardScroll")).minY)
@@ -100,6 +102,11 @@ struct CallCardView: View {
                 Button("\(phone.label) \(phone.number)") { call(phone) }
             }
         }
+        .confirmationDialog("메시지 보낼 번호", isPresented: $showMessagePicker, titleVisibility: .visible) {
+            ForEach(contact.phones, id: \.self) { phone in
+                Button("\(phone.label) \(phone.number)") { message(phone) }
+            }
+        }
     }
 
     private var header: some View {
@@ -112,12 +119,22 @@ struct CallCardView: View {
             if !contact.company.isEmpty {
                 Text(contact.company).font(.subheadline).foregroundStyle(.secondary)
             }
-            Text(lastContact.map { "마지막 연락 \($0.formatted(.relative(presentation: .named)))" } ?? "아직 연락 기록 없음")
+            Text(lastContact.map { L("마지막 연락 \($0.formatted(.relative(presentation: .named).locale(LanguageManager.shared.locale)))") } ?? L("아직 연락 기록 없음"))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 8)
+        .overlay(alignment: .topLeading) {
+            // 아래로 끌어 닫기와 같은 방향을 알려 주는 표준 닫기 버튼
+            Button { dismiss() } label: {
+                Image(systemName: "chevron.down")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding(16)
+            }
+            .accessibilityLabel("닫기")
+        }
         .overlay(alignment: .topTrailing) {
             Button(action: toggleFavorite) {
                 Image(systemName: isFavorite ? "star.fill" : "star")
@@ -125,6 +142,7 @@ struct CallCardView: View {
                     .foregroundStyle(isFavorite ? .yellow : .white.opacity(0.8))
                     .padding(16)
             }
+            .accessibilityLabel(isFavorite ? L("즐겨찾기에서 제거") : L("즐겨찾기에 추가"))
         }
     }
 
@@ -172,9 +190,14 @@ struct CallCardView: View {
 
     private var actionBar: some View {
         HStack(spacing: 36) {
-            ActionButton(symbol: "square.and.pencil", title: "메모", tint: .white.opacity(0.18)) {
-                showNoteEditor = true
+            ActionButton(symbol: "message.fill", title: "메시지", tint: .white.opacity(0.18)) {
+                if contact.phones.count > 1 {
+                    showMessagePicker = true
+                } else if let phone = contact.phones.first {
+                    message(phone)
+                }
             }
+            .disabled(contact.phones.isEmpty)
             ActionButton(symbol: "phone.fill", title: "전화", tint: .green, size: 76) {
                 if contact.phones.count > 1 {
                     showNumberPicker = true
@@ -183,12 +206,18 @@ struct CallCardView: View {
                 }
             }
             .disabled(contact.phones.isEmpty)
-            ActionButton(symbol: "xmark", title: "닫기", tint: .white.opacity(0.18)) {
-                dismiss()
+            ActionButton(symbol: "square.and.pencil", title: "메모", tint: .white.opacity(0.18)) {
+                showNoteEditor = true
             }
         }
         .padding(.top, 10)
         .padding(.bottom, 14)
+    }
+
+    /// 시스템 메시지 앱으로 넘긴다(앱은 문자를 읽거나 보내지 않는다).
+    private func message(_ phone: PhoneEntry) {
+        let number = phone.number.filter { $0.isNumber || $0 == "+" }
+        if let url = URL(string: "sms:\(number)") { openURL(url) }
     }
 
     private func call(_ phone: PhoneEntry) {
@@ -209,7 +238,7 @@ private struct ScrollOffsetKey: PreferenceKey {
 
 private struct ActionButton: View {
     let symbol: String
-    let title: String
+    let title: LocalizedStringKey
     let tint: Color
     var size: CGFloat = 64
     let action: () -> Void
@@ -223,7 +252,9 @@ private struct ActionButton: View {
                     .frame(width: size, height: size)
                     .background(tint, in: Circle())
             }
+            .accessibilityLabel(Text(title))
             Text(title).font(.caption).foregroundStyle(.secondary)
+                .accessibilityHidden(true)
         }
     }
 }
