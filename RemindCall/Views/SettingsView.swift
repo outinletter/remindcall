@@ -8,8 +8,8 @@ struct SettingsView: View {
     @AppStorage("postCallMinutes") private var postCallMinutes = 10
     @AppStorage("bdayEnabled") private var bdayEnabled = false
     @AppStorage("bdayHour") private var bdayHour = 9
-    @AppStorage("bdaySameDay") private var bdaySameDay = true
-    @AppStorage("bdayDayBefore") private var bdayDayBefore = false
+    @AppStorage("bdayAlert") private var bdayAlert = 0
+    @AppStorage("bdaySecondAlert") private var bdaySecondAlert = 1
     @AppStorage("bdayFavoritesOnly") private var bdayFavoritesOnly = false
     @AppStorage("labelEnabled") private var labelEnabled = false
 
@@ -75,17 +75,25 @@ struct SettingsView: View {
         Section {
             Toggle("생일 알림", isOn: permissionBinding($bdayEnabled))
             if bdayEnabled {
+                Picker("알림", selection: $bdayAlert) {
+                    ForEach(BirthdayAlert.choices, id: \.self) { Text(BirthdayAlert.title($0)).tag($0) }
+                }
+                Picker("두 번째 알림", selection: $bdaySecondAlert) {
+                    Text("없음").tag(-1)
+                    ForEach(BirthdayAlert.choices.filter { $0 != bdayAlert }, id: \.self) {
+                        Text(BirthdayAlert.title($0)).tag($0)
+                    }
+                }
                 Picker("알림 시각", selection: $bdayHour) {
                     ForEach(0..<24, id: \.self) { Text(Self.hourText($0)).tag($0) }
                 }
-                Toggle("생일 당일", isOn: $bdaySameDay)
-                Toggle("하루 전", isOn: $bdayDayBefore)
-                Toggle("즐겨찾기만", isOn: $bdayFavoritesOnly)
+                Toggle("즐겨찾기에 있는 사람만", isOn: $bdayFavoritesOnly)
+                    .onChange(of: bdayAlert) { _, new in if bdaySecondAlert == new { bdaySecondAlert = -1 } }
             }
         } header: {
             Text("생일")
         } footer: {
-            Text("가까운 생일 순으로 최대 50개를 예약하며, 앱을 열 때마다 갱신됩니다. 오랫동안 앱을 열지 않으면 일부 알림이 빠질 수 있어요.")
+            Text("알림은 정한 시각에 옵니다. 가까운 생일 순으로 최대 50개를 예약하며, 앱을 열 때마다 갱신됩니다. 오랫동안 앱을 열지 않으면 일부 알림이 빠질 수 있어요.")
         }
     }
 
@@ -246,5 +254,23 @@ struct LabelEditorView: View {
             }
         }
         .presentationDetents([.height(300)])
+    }
+}
+
+/// 생일 알림 시점(생일 며칠 전). 캘린더 앱의 생일 알림과 같은 선택지.
+enum BirthdayAlert {
+    static let choices = [0, 1, 2, 7]
+
+    static func title(_ days: Int) -> String {
+        switch days {
+        case 0: "당일"
+        case 7: "1주 전"
+        default: "\(days)일 전"
+        }
+    }
+
+    /// 저장된 두 값을 겹치지 않는 시점 목록으로
+    static func offsets(first: Int, second: Int) -> [Int] {
+        Array(Set([first, second].filter { $0 >= 0 })).sorted()
     }
 }

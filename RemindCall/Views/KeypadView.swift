@@ -32,7 +32,7 @@ struct KeypadView: View {
         VStack(spacing: 0) {
             matchList
                 .frame(maxWidth: .infinity)
-                .frame(height: 190, alignment: .bottom)
+                .frame(maxHeight: .infinity, alignment: .bottom)
                 .padding(.horizontal, 16)
 
             HStack {
@@ -55,7 +55,7 @@ struct KeypadView: View {
             .padding(.horizontal, 16)
             .frame(height: 64)
 
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 ForEach(rows, id: \.self) { row in
                     HStack(spacing: 26) {
                         ForEach(row, id: \.self) { key in
@@ -68,14 +68,14 @@ struct KeypadView: View {
                     Image(systemName: "phone.fill")
                         .font(.system(size: 34))
                         .foregroundStyle(.white)
-                        .frame(width: 80, height: 80)
+                        .frame(width: 76, height: 76)
                         .background(Color(red: 0.2, green: 0.78, blue: 0.35), in: Circle())
                 }
                 .buttonStyle(KeyPressStyle())
                 .padding(.top, 4)
             }
-            .padding(.top, 8)
-            Spacer(minLength: 0)
+            .padding(.top, 4)
+            .padding(.bottom, 24)
         }
     }
 
@@ -126,14 +126,14 @@ struct KeypadView: View {
         var body: some View {
             VStack(spacing: -2) {
                 Text(key)
-                    .font(.system(size: key == "*" ? 44 : 36, weight: .regular))
+                    .font(.system(size: key == "*" ? 42 : 34, weight: .regular))
                     .offset(y: key == "*" ? 6 : 0)
                 if let sub = Self.letters[key] {
                     Text(sub).font(.system(size: 10, weight: .bold)).tracking(2)
                 }
             }
             .foregroundStyle(.primary)
-            .frame(width: 80, height: 80)
+            .frame(width: 76, height: 76)
             .background(Color(.systemGray5), in: Circle())
         }
     }

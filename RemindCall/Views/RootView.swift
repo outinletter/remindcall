@@ -16,14 +16,14 @@ struct RootView: View {
 
     @AppStorage("bdayEnabled") private var bdayEnabled = false
     @AppStorage("bdayHour") private var bdayHour = 9
-    @AppStorage("bdaySameDay") private var bdaySameDay = true
-    @AppStorage("bdayDayBefore") private var bdayDayBefore = false
+    @AppStorage("bdayAlert") private var bdayAlert = 0
+    @AppStorage("bdaySecondAlert") private var bdaySecondAlert = 1
     @AppStorage("bdayFavoritesOnly") private var bdayFavoritesOnly = false
     @AppStorage("labelEnabled") private var labelEnabled = false
 
     /// 이 값이 바뀌면 생일 알림을 다시 예약한다.
     private var birthdayKey: String {
-        "\(store.contacts.count)|\(bdayEnabled)|\(bdayHour)|\(bdaySameDay)|\(bdayDayBefore)|\(bdayFavoritesOnly)|"
+        "\(store.contacts.count)|\(bdayEnabled)|\(bdayHour)|\(bdayAlert)|\(bdaySecondAlert)|\(bdayFavoritesOnly)|"
             + "\(profiles.filter(\.isFavorite).count)|\(notes.count)|\(refreshToken)"
     }
 
@@ -73,7 +73,7 @@ struct RootView: View {
         }
         await NotificationManager.shared.rescheduleBirthdays(
             contacts: store.contacts,
-            enabled: bdayEnabled, hour: bdayHour, sameDay: bdaySameDay, dayBefore: bdayDayBefore,
+            enabled: bdayEnabled, hour: bdayHour, offsets: BirthdayAlert.offsets(first: bdayAlert, second: bdaySecondAlert),
             favoritesOnly: bdayFavoritesOnly,
             favoriteKeys: Set(profiles.filter(\.isFavorite).map(\.phoneKey)),
             memos: memos.mapValues(\.body)

@@ -62,12 +62,12 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
     // MARK: 생일 알림
 
-    func rescheduleBirthdays(contacts: [ContactInfo], enabled: Bool, hour: Int, sameDay: Bool,
-                             dayBefore: Bool, favoritesOnly: Bool, favoriteKeys: Set<String>,
+    func rescheduleBirthdays(contacts: [ContactInfo], enabled: Bool, hour: Int, offsets: [Int],
+                             favoritesOnly: Bool, favoriteKeys: Set<String>,
                              memos: [String: String]) async {
         let pending = await center.pendingNotificationRequests()
         center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier).filter { $0.hasPrefix("bday-") })
-        guard enabled, sameDay || dayBefore else { return }
+        guard enabled, !offsets.isEmpty else { return }
 
         struct Item { let fire: Date; let title: String; let body: String; let id: String; let key: String }
         let calendar = Calendar.current
@@ -78,13 +78,18 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
                   let base = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: next.date) else { continue }
             let memo = contact.allKeys.compactMap { memos[$0] }.first.map { "\n📝 \($0)" } ?? ""
             let turning = next.turning.map { " (\($0)번째 생일)" } ?? ""
-            if sameDay {
-                items.append(Item(fire: base, title: "🎂 \(contact.name)님 생일",
-                                  body: "오늘이 생일이에요\(turning)\(memo)", id: "bday-\(contact.id)-0", key: contact.primaryKey))
-            }
-            if dayBefore, let eve = calendar.date(byAdding: .day, value: -1, to: base) {
-                items.append(Item(fire: eve, title: "🎂 내일은 \(contact.name)님 생일",
-                                  body: "내일이 생일이에요\(turning)\(memo)", id: "bday-\(contact.id)-1", key: contact.primaryKey))
+            for days in offsets {
+                guard let fire = calendar.date(byAdding: .day, value: -days, to: base) else { continue }
+                let when = switch days {
+                case 0: "오늘"
+                case 1: "내일"
+                case 7: "일주일 뒤"
+                default: "\(days)일 뒤"
+                }
+                let title = days == 0 ? "🎂 \(contact.name)님 생일" : "🎂 \(when) \(contact.name)님 생일"
+                let body = days <= 1 ? "\(when)이 생일이에요" : "\(when) 생일이에요"
+                items.append(Item(fire: fire, title: title, body: "\(body)\(turning)\(memo)",
+                                  id: "bday-\(contact.id)-\(days)", key: contact.primaryKey))
             }
         }
         let upcoming = items.filter { $0.fire > .now }.sorted { $0.fire < $1.fire }.prefix(birthdayLimit)
