@@ -40,8 +40,15 @@ SL={
       (8118,"联系记录集中查看","从RemindCall拨出的电话和备忘录"),
       (8121,"只开启需要的提醒","通话后备忘 · 生日 · 陌生号码标签")],
 }
+STYLES={"indigo":((67,56,202),(15,23,42),(255,255,255),(199,210,254),(255,255,255)),
+        "black":((28,28,30),(0,0,0),(255,255,255),(174,174,178),(72,72,74)),
+        "light":((242,242,247),(229,229,234),(28,28,30),(99,99,102),(209,209,214)),
+        "warm":((255,138,91),(162,28,175),(255,255,255),(255,228,240),(255,255,255)),
+        "green":((22,101,52),(5,46,22),(255,255,255),(187,247,208),(134,239,172))}
+STYLE=os.environ.get("STYLE","warm"); TOP,BOT,TC,SC,OC=STYLES[STYLE]
+ONLY=os.environ.get("ONLY")
 def gradient():
-    top,bottom=(67,56,202),(15,23,42)
+    top,bottom=TOP,BOT
     img=Image.new("RGB",(W,H)); d=ImageDraw.Draw(img)
     for y in range(H):
         t=y/(H-1); d.line([(0,y),(W,y)],fill=tuple(int(top[i]+(bottom[i]-top[i])*t) for i in range(3)))
@@ -53,21 +60,24 @@ def rmask(size,r):
 def center(d,y,text,f,fill):
     w=d.textlength(text,font=f); d.text(((W-w)/2,y),text,font=f,fill=fill)
 for lang,slides in SL.items():
-    od=os.path.join(OUT,lang); os.makedirs(od,exist_ok=True)
-    for f in os.listdir(od): os.remove(os.path.join(od,f))
+    if ONLY and lang!=ONLY.split(":")[0]: continue
+    od=os.environ.get("OUTDIR") or os.path.join(OUT,lang); os.makedirs(od,exist_ok=True)
+    if not ONLY:
+        for f in os.listdir(od): os.remove(os.path.join(od,f))
     for i,(img,title,sub) in enumerate(slides,1):
+        if ONLY and i!=int(ONLY.split(":")[1]): continue
         c=gradient()
         shot=Image.open(D%img).convert("RGB"); sw=935; sh=int(shot.height*sw/shot.width)
         shot=shot.resize((sw,sh),Image.LANCZOS); x,y=(W-sw)//2,487
         sd=Image.new("RGBA",(W,H),(0,0,0,0)); ImageDraw.Draw(sd).rounded_rectangle((x,y+24,x+sw,y+sh+24),84,fill=(0,0,0,120))
         c=Image.alpha_composite(c.convert("RGBA"),sd.filter(ImageFilter.GaussianBlur(36))).convert("RGB")
         c.paste(shot,(x,y),rmask((sw,sh),84))
-        d=ImageDraw.Draw(c); d.rounded_rectangle((x-2,y-2,x+sw+2,y+sh+2),86,outline=(255,255,255),width=3)
+        d=ImageDraw.Draw(c); d.rounded_rectangle((x-2,y-2,x+sw+2,y+sh+2),86,outline=OC,width=3)
         ts=92
         while d.textlength(title,font=font(lang,ts,True))>W-110: ts-=2
-        center(d,190,title,font(lang,ts,True),(255,255,255))
+        center(d,190,title,font(lang,ts,True),TC)
         ss=46
         while d.textlength(sub,font=font(lang,ss,False))>W-140: ss-=2
-        center(d,318,sub,font(lang,ss,False),(199,210,254))
-        c.save(os.path.join(od,f"{i:02d}.png"))
+        center(d,318,sub,font(lang,ss,False),SC)
+        c.save(os.path.join(od,f"{STYLE}-{i:02d}.png" if ONLY else f"{i:02d}.png"))
 print("ok")

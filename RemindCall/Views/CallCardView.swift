@@ -199,13 +199,17 @@ struct CallCardView: View {
             }
             .disabled(contact.phones.isEmpty)
             ActionButton(symbol: "phone.fill", title: "전화", tint: .green, size: 76) {
-                if contact.phones.count > 1 {
-                    showNumberPicker = true
-                } else if let phone = contact.phones.first {
-                    call(phone)
-                }
+                // 탭하면 첫 번호로 바로 건다. 다른 번호는 길게 눌러 고른다.
+                if let phone = contact.phones.first { call(phone) }
             }
             .disabled(contact.phones.isEmpty)
+            .contextMenu {
+                if contact.phones.count > 1 {
+                    ForEach(contact.phones, id: \.self) { phone in
+                        Button("\(phone.label) \(phone.number)") { call(phone) }
+                    }
+                }
+            }
             ActionButton(symbol: "square.and.pencil", title: "메모", tint: .white.opacity(0.18)) {
                 showNoteEditor = true
             }
